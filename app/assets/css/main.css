@@ -1,0 +1,97 @@
+@import 'tailwindcss';
+@import '@fontsource/syne/400.css';
+@import '@fontsource/syne/700.css';
+@import '@fontsource/syne-mono/400.css';
+
+/*https://tailwindcss.com/docs/upgrade-guide#buttons-use-the-default-cursor*/
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@theme {
+  --color-primary: #58a6ff;
+  --color-text: #e6edf3;
+  --color-text-muted: #7d8590;
+  --color-background: #0d1117;
+  --color-surface-secondary: #161b22;
+  --color-surface-tertiary: #21262d;
+  --color-border: rgba(255, 255, 255, 0.08);
+
+  --spacing-side: 22px;
+
+  --font-syne: 'Syne', sans-serif;
+  --font-syne-mono: 'Syne Mono', monospace;
+
+  --animate-fadeUp: fadeUp 0.5s ease both;
+  --animate-fadeDown: fadeDown 0.5s ease both;
+}
+
+:root {
+  &:not(.dark) {
+    --color-text: #1a1f2e;
+    --color-text-muted: #6e7781;
+    --color-background: #f6f8fa;
+    --color-surface-secondary: #ffffff;
+    --color-surface-tertiary: #f0f2f4;
+    --color-border: rgba(0, 0, 0, 0.08);
+  }
+
+  @media (min-width: 768px) {
+    --spacing-side: 44px;
+    --spacing-header: 100px;
+  }
+}
+
+body {
+  font-family: 'Syne', sans-serif;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+@utility button-primary {
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 8px 18px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &.filled {
+    background: var(--color-primary);
+    color: var(--color-background);
+  }
+}
+
+@utility tag {
+  @apply border rounded-full px-3.5 py-1.5 text-xs font-semibold font-syne-mono;
+}
+
+@utility card {
+  @apply bg-surface-secondary rounded-lg shadow-lg p-4 border-border border text-text-muted flex flex-col gap-2;
+
+  h3 {
+    @apply text-xs font-syne-mono;
+  }
+}
+
+@utility sub-card {
+  @apply bg-surface-tertiary rounded-lg shadow-lg p-2 text-xs font-syne-mono flex gap-1 border-border border;
+
+  .value {
+    @apply font-bold text-text;
+  }
+
+  .unit {
+    @apply text-text-muted;
+  }
+}
