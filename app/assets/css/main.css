@@ -74,6 +74,10 @@ body {
 
 @utility tag {
   @apply border rounded-full px-3.5 py-1.5 text-xs font-semibold font-syne-mono;
+
+  &.small {
+    @apply px-2 py-0.5;
+  }
 }
 
 @utility weather-tag {

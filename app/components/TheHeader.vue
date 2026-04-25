@@ -1,5 +1,9 @@
 <script setup lang="ts">
 defineProps<{ showSearch?: boolean }>()
+
+const navigateToDetailPage = (icaoId: string) => {
+  navigateTo({ path: '/detail', query: { icaoId } })
+}
 </script>
 
 <template>
@@ -14,7 +18,7 @@ defineProps<{ showSearch?: boolean }>()
         <div class="w-1.5 h-1.5 bg-primary rounded-full" />
         <span class="font-bold">METAR Explorer</span>
       </div>
-      <SearchInput v-if="showSearch" />
+      <SearchInput v-if="showSearch" @search="navigateToDetailPage" />
     </div>
   </header>
 </template>

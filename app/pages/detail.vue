@@ -1,47 +1,70 @@
 <script setup lang="ts">
-import CloudLayer from '~/components/CloudLayer.vue'
 import type { MetarProperties } from '~/types/MetarProperties'
 
 definePageMeta({ layout: 'default-with-search' })
 
-const data: MetarProperties = {
-  icaoId: 'KNUC',
-  receiptTime: '2026-04-15T19:06:04.107Z',
-  obsTime: 1776279360,
-  reportTime: '2026-04-15T19:00:00.000Z',
-  temp: 12,
-  dewp: 4,
-  wdir: 270,
-  wspd: 7,
-  wxString: 'SHSN FZFG BLDU DRSA MIRA PRFG BCFG VCSH',
-  visib: '10+',
-  altim: 1018.7,
-  metarType: 'METAR',
-  rawOb: 'METAR KNUC 151856Z 27007KT 10SM BKN010 BKN250 19/14 A3008 RMK SLPNO T01890144',
-  lat: 33.022,
-  lon: -118.583,
-  elev: 52,
-  name: 'San Clemente, CA, US',
-  clouds: [
-    {
-      cover: 'BKN',
-      base: 1000,
-    },
-    {
-      cover: 'BKN',
-      base: 25000,
-    },
-  ],
-  fltCat: 'MVFR',
+type AirportData = {
+  metar: MetarProperties | null
+  nearbyAirports: MetarProperties[]
+}
+
+const icaoId = computed(() => useRoute().query.icaoId || null)
+
+const { data: asyncData, pending } = useAsyncData(
+  'metar',
+  async (): Promise<AirportData> => {
+    const metarResponse = await $fetch(`/api/metar?ids=${icaoId.value}`)
+    const metar = metarResponse[0]
+    if (metar) {
+      const { lamin, lamax, lomin, lomax } = getBoundingBox(metar.lat, metar.lon)
+      const bbox = `${lamin},${lomin},${lamax},${lomax}`
+      const nearbyAirports = await $fetch(`/api/metar?bbox=${bbox}`)
+      if (nearbyAirports) {
+        return {
+          metar,
+          nearbyAirports: nearbyAirports
+            .filter((airport) => airport.icaoId !== metar.icaoId)
+            .slice(0, 4),
+        }
+      }
+    }
+    return {
+      metar: null,
+      nearbyAirports: [],
+    }
+  },
+  {
+    watch: [icaoId],
+  },
+)
+
+const metar = computed(() => {
+  return asyncData.value?.metar
+})
+
+const nearbyAirports = computed(() => {
+  return asyncData.value?.nearbyAirports ?? []
+})
+
+const getBoundingBox = (lat: number, lon: number, radiusKm = 100) => {
+  const deg = radiusKm / 111
+  return {
+    lamin: lat - deg,
+    lamax: lat + deg,
+    lomin: lon - deg / Math.cos((lat * Math.PI) / 180),
+    lomax: lon + deg / Math.cos((lat * Math.PI) / 180),
+  }
 }
 
 const detailedName = computed(() => {
-  const [name, region, country] = data.name.split(', ')
+  if (!metar.value) return { name: '', region: '', country: '' }
+  const [name, region, country] = metar.value.name.split(', ')
   return { name, region, country }
 })
 
 const formattedTime = computed(() => {
-  const date = new Date(data.reportTime)
+  if (!metar.value) return ''
+  const date = new Date(metar.value.reportTime)
   return date.toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'short',
@@ -54,8 +77,9 @@ const formattedTime = computed(() => {
 })
 
 const spread = computed(() => {
-  if (data.temp && data.dewp) {
-    return Math.round(data.temp) - Math.round(data.dewp)
+  if (!metar.value) return null
+  if (metar.value.temp && metar.value.dewp) {
+    return Math.round(metar.value.temp) - Math.round(metar.value.dewp)
   }
   return null
 })
@@ -86,26 +110,25 @@ const ktToMsec = (kt: number) => {
 }
 
 const cloudLayers = computed(() => {
-  return (data.clouds ?? []).sort((a, b) => b.base - a.base)
+  return (metar.value?.clouds ?? []).sort((a, b) => b.base - a.base)
 })
 </script>
 
 <template>
-  <div class="flex px-side">
+  <p v-if="pending" class="m-auto">Loading...</p>
+  <div v-else-if="metar" class="flex px-side">
     <div class="py-8 pr-8 flex-3 flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <div class="flex justify-between items-center">
           <h2 class="font-bold text-3xl">{{ detailedName.name }}</h2>
-          <div v-if="data.fltCat === 'VFR'" class="tag text-green-500">VFR</div>
-          <div v-else-if="data.fltCat === 'IFR'" class="tag text-red-500">IFR</div>
-          <div v-else-if="data.fltCat === 'MVFR'" class="tag text-blue-500">MVFR</div>
+          <FltCatTag :flt-cat="metar.fltCat" />
         </div>
         <div class="flex gap-2 text-text-muted font-syne-mono text-sm">
-          <span>{{ data.icaoId }}</span>
+          <span>{{ metar.icaoId }}</span>
           <span>·</span>
           <span>{{ detailedName.region }}, {{ detailedName.country }}</span>
           <span>·</span>
-          <span>{{ data.elev }}m AMSL</span>
+          <span>{{ metar.elev }} m AMSL</span>
           <span>·</span>
           <span>{{ formattedTime }}</span>
         </div>
@@ -114,30 +137,30 @@ const cloudLayers = computed(() => {
         <div style="grid-area: raw" class="card">
           <h3>RAW METAR</h3>
           <p class="text-text font-syne-mono">
-            {{ data.rawOb }}
+            {{ metar.rawOb }}
           </p>
         </div>
         <div style="grid-area: wind" class="card flex items-center flex-row gap-12 p-8">
-          <template v-if="data.wdir">
-            <CompassRose :direction="data.wdir" />
+          <template v-if="metar.wdir">
+            <CompassRose :direction="metar.wdir" />
             <div class="flex flex-col gap-2 max-w-64">
               <p class="text-text text-2xl font-syne font-bold">
-                {{ data.wdir }}° · {{ data.wspd }} kt
+                {{ metar.wdir }}° · {{ metar.wspd }} kt
               </p>
-              <p v-if="data?.wdir != null && data?.wspd != null">
-                {{ formatWindToText(data.wspd, data.wdir, data.wgst) }}
+              <p v-if="metar?.wdir != null && metar?.wspd != null">
+                {{ formatWindToText(metar.wspd, metar.wdir, metar.wgst) }}
               </p>
-              <div v-if="data.wspd" class="flex gap-4">
+              <div v-if="metar.wspd" class="flex gap-4">
                 <div class="sub-card">
-                  <span class="value">{{ data.wspd }}</span>
+                  <span class="value">{{ metar.wspd }}</span>
                   <span class="unit">kt</span>
                 </div>
                 <div class="sub-card">
-                  <span class="value">{{ ktToKmh(data.wspd) }}</span>
+                  <span class="value">{{ ktToKmh(metar.wspd) }}</span>
                   <span class="unit">km/h</span>
                 </div>
                 <div class="sub-card">
-                  <span class="value">{{ ktToMsec(data.wspd) }}</span>
+                  <span class="value">{{ ktToMsec(metar.wspd) }}</span>
                   <span class="unit">m/s</span>
                 </div>
               </div>
@@ -149,29 +172,31 @@ const cloudLayers = computed(() => {
         </div>
         <div style="grid-area: temp" class="card">
           <h3>TEMPERATURE</h3>
-          <template v-if="data.temp">
-            <p class="text-text text-2xl font-syne font-bold">{{ Math.round(data.temp) }}°C</p>
-            <p v-if="data.dewp">Dew point {{ Math.round(data.dewp) }}°C · spread {{ spread }}°C</p>
+          <template v-if="metar.temp">
+            <p class="text-text text-2xl font-syne font-bold">{{ Math.round(metar.temp) }}°C</p>
+            <p v-if="metar.dewp">
+              Dew point {{ Math.round(metar.dewp) }}°C · spread {{ spread }}°C
+            </p>
           </template>
           <p v-else>No Temperature Data</p>
         </div>
         <div style="grid-area: qnh" class="card">
           <h3>QNH</h3>
-          <template v-if="data.altim">
-            <p class="text-text text-2xl font-syne font-bold">{{ Math.round(data.altim) }} hPa</p>
-            <p>{{ hpaToInHg(data.altim) }} inHg</p>
+          <template v-if="metar.altim">
+            <p class="text-text text-2xl font-syne font-bold">{{ Math.round(metar.altim) }} hPa</p>
+            <p>{{ hpaToInHg(metar.altim) }} inHg</p>
           </template>
           <p v-else>No QNH Data</p>
         </div>
         <div style="grid-area: vis" class="card">
           <h3>VISIBILITY</h3>
-          <p class="text-text text-2xl font-syne font-bold">{{ data.visib }} km</p>
+          <p class="text-text text-2xl font-syne font-bold">{{ metar.visib || '?' }} km</p>
         </div>
         <div style="grid-area: wx" class="card">
           <h3>WEATHER</h3>
-          <div class="flex gap-4 flex-wrap" v-if="data.wxString">
+          <div class="flex gap-4 flex-wrap" v-if="metar.wxString">
             <div
-              v-for="wx in data.wxString.split(' ')"
+              v-for="wx in metar.wxString.split(' ')"
               class="tag flex gap-1 w-fit text-cyan-500"
               :class="getWxTailwindColor(wx)"
             >
@@ -179,12 +204,14 @@ const cloudLayers = computed(() => {
               <span>{{ formatWxString(wx) }}</span>
             </div>
           </div>
-          <p v-else>No Weather Data</p>
+          <p v-else>No significant Weather</p>
         </div>
       </div>
       <div class="flex flex-col gap-4 text-xs font-syne-mono">
         <h3>CLOUD LAYERS</h3>
+        <p v-if="!cloudLayers.length">No Clouds</p>
         <CloudLayer
+          v-else
           v-for="(cloudLayer, index) in cloudLayers"
           :cloud-layer="cloudLayer"
           :key="index"
@@ -195,14 +222,14 @@ const cloudLayers = computed(() => {
       <div class="card flex flex-col gap-4">
         <h3>TEMP / DEW POINT / SPREAD</h3>
         <div class="text-xs flex flex-col gap-2">
-          <div v-if="data.temp" class="side-detail-container">
+          <div v-if="metar.temp" class="side-detail-container">
             <span>Temperature</span>
-            <span class="data">{{ Math.round(data.temp) }}°C</span>
+            <span class="data">{{ Math.round(metar.temp) }}°C</span>
           </div>
           <hr />
-          <div v-if="data.dewp" class="side-detail-container">
+          <div v-if="metar.dewp" class="side-detail-container">
             <span>Dew Point</span>
-            <span class="data">{{ Math.round(data.dewp) }}°C</span>
+            <span class="data">{{ Math.round(metar.dewp) }}°C</span>
           </div>
           <hr />
           <div v-if="spread != null" class="side-detail-container">
@@ -218,27 +245,52 @@ const cloudLayers = computed(() => {
         <div class="text-xs flex flex-col gap-2">
           <div class="side-detail-container">
             <span>ICAO</span>
-            <span class="data">{{ data.icaoId }}</span>
+            <span class="data">{{ metar.icaoId }}</span>
           </div>
           <hr />
           <div class="side-detail-container">
             <span>Elevation</span>
-            <span class="data">{{ data.elev }}</span>
+            <span class="data">{{ metar.elev }} m</span>
           </div>
           <hr />
           <div class="side-detail-container">
             <span>Coordinates</span>
-            <span class="data">{{ coordinatesToHuman(data.lat, data.lon) }}</span>
+            <span class="data">{{ coordinatesToHuman(metar.lat, metar.lon) }}</span>
           </div>
           <hr />
           <div class="side-detail-container">
             <span>Type</span>
-            <span class="data">{{ data.metarType }}</span>
+            <span class="data">{{ metar.metarType }}</span>
           </div>
+        </div>
+      </div>
+      <div class="card flex flex-col gap-4 mt-auto">
+        <h3>NEARBY AIRPORTS</h3>
+        <div class="text-xs flex flex-col gap-2">
+          <template v-for="(airport, index) in nearbyAirports" :key="airport.icaoId">
+            <button
+              @click="navigateTo({ path: '/detail', query: { icaoId: airport.icaoId } })"
+              class="flex items-center justify-between text-start"
+            >
+              <span class="flex flex-col">
+                <span class="font-bold text-text">{{ airport.icaoId }}</span>
+                <span>{{ airport.name }}</span>
+              </span>
+              <span class="flex gap-2 items-center">
+                <span>{{ airport.altim }}</span>
+                <FltCatTag :flt-cat="airport.fltCat" :small="true" />
+              </span>
+            </button>
+            <hr v-if="index < nearbyAirports.length - 1" />
+          </template>
         </div>
       </div>
     </div>
   </div>
+  <p class="m-auto" v-else>
+    No METAR data found for this ICAO code. <br />
+    Try something like: EDDM, LOWW, EDDF
+  </p>
 </template>
 
 <style scoped>

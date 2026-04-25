@@ -16,7 +16,8 @@
     "fmt:check": "oxfmt --check",
     "npm-check-updates": "npx taze major --maturity-period 2",
     "npm-check-updates:install": "npx taze major -w --maturity-period 2 && npm install",
-    "typecheck": "nuxt prepare && vue-tsc"
+    "typecheck": "nuxt prepare && vue-tsc",
+    "code-quality": "npx fallow"
   },
   "dependencies": {
     "@fontsource/syne": "^5.2.7",
