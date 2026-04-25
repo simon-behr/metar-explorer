@@ -5,34 +5,34 @@ import type { MetarProperties } from '~/types/MetarProperties'
 definePageMeta({ layout: 'default-with-search' })
 
 const data: MetarProperties = {
-  "icaoId": "KNUC",
-  "receiptTime": "2026-04-15T19:06:04.107Z",
-  "obsTime": 1776279360,
-  "reportTime": "2026-04-15T19:00:00.000Z",
-  "temp": 18.9,
-  "dewp": 14.4,
-  "wdir": 270,
-  "wspd": 7,
-  "wxString": "SHSN",
-  "visib": "10+",
-  "altim": 1018.7,
-  "metarType": "METAR",
-  "rawOb": "METAR KNUC 151856Z 27007KT 10SM BKN010 BKN250 19/14 A3008 RMK SLPNO T01890144",
-  "lat": 33.022,
-  "lon": -118.583,
-  "elev": 52,
-  "name": "San Clemente, CA, US",
-  "clouds": [
+  icaoId: 'KNUC',
+  receiptTime: '2026-04-15T19:06:04.107Z',
+  obsTime: 1776279360,
+  reportTime: '2026-04-15T19:00:00.000Z',
+  temp: 12,
+  dewp: 4,
+  wdir: 270,
+  wspd: 7,
+  wxString: 'SHSN FZFG BLDU DRSA MIRA PRFG BCFG VCSH',
+  visib: '10+',
+  altim: 1018.7,
+  metarType: 'METAR',
+  rawOb: 'METAR KNUC 151856Z 27007KT 10SM BKN010 BKN250 19/14 A3008 RMK SLPNO T01890144',
+  lat: 33.022,
+  lon: -118.583,
+  elev: 52,
+  name: 'San Clemente, CA, US',
+  clouds: [
     {
-      "cover": "BKN",
-      "base": 1000
+      cover: 'BKN',
+      base: 1000,
     },
     {
-      "cover": "BKN",
-      "base": 25000
-    }
+      cover: 'BKN',
+      base: 25000,
+    },
   ],
-  "fltCat": "MVFR"
+  fltCat: 'MVFR',
 }
 
 const detailedName = computed(() => {
@@ -53,12 +53,32 @@ const formattedTime = computed(() => {
   })
 })
 
+const spread = computed(() => {
+  if (data.temp && data.dewp) {
+    return Math.round(data.temp) - Math.round(data.dewp)
+  }
+  return null
+})
+
+const fogRisk = computed<{ risk: string; color: string }>(() => {
+  if (spread.value != null) {
+    if (spread.value <= 2) {
+      return { risk: 'High', color: 'text-red-500' }
+    } else if (spread.value <= 4) {
+      return { risk: 'Moderate', color: 'text-yellow-400' }
+    } else {
+      return { risk: 'Low', color: 'text-green-500' }
+    }
+  }
+  return { risk: '', color: '' }
+})
+
 const hpaToInHg = (hpa: number) => {
   return Math.round((hpa / 33.8639) * 10) / 10
 }
 
 const ktToKmh = (kt: number) => {
-  return Math.round(kt * 1.852 * 10) / 10
+  return Math.round(kt * 1.852)
 }
 
 const ktToMsec = (kt: number) => {
@@ -130,18 +150,15 @@ const cloudLayers = computed(() => {
         <div style="grid-area: temp" class="card">
           <h3>TEMPERATURE</h3>
           <template v-if="data.temp">
-            <p class="text-text text-2xl font-syne font-bold">{{ data.temp }}°C</p>
-            <p v-if="data.dewp">
-              Dew point {{ data.dewp }}°C · spread
-              {{ Math.round((data.temp - data.dewp) * 10) / 10 }}°C
-            </p>
+            <p class="text-text text-2xl font-syne font-bold">{{ Math.round(data.temp) }}°C</p>
+            <p v-if="data.dewp">Dew point {{ Math.round(data.dewp) }}°C · spread {{ spread }}°C</p>
           </template>
           <p v-else>No Temperature Data</p>
         </div>
         <div style="grid-area: qnh" class="card">
           <h3>QNH</h3>
           <template v-if="data.altim">
-            <p class="text-text text-2xl font-syne font-bold">{{ data.altim }} hPa</p>
+            <p class="text-text text-2xl font-syne font-bold">{{ Math.round(data.altim) }} hPa</p>
             <p>{{ hpaToInHg(data.altim) }} inHg</p>
           </template>
           <p v-else>No QNH Data</p>
@@ -152,7 +169,17 @@ const cloudLayers = computed(() => {
         </div>
         <div style="grid-area: wx" class="card">
           <h3>WEATHER</h3>
-          <p v-if="data.wxString">{{formatWxString(data.wxString)}}</p>
+          <div class="flex gap-4 flex-wrap" v-if="data.wxString">
+            <div
+              v-for="wx in data.wxString.split(' ')"
+              class="tag flex gap-1 w-fit text-cyan-500"
+              :class="getWxTailwindColor(wx)"
+            >
+              <span>{{ wx }}:</span>
+              <span>{{ formatWxString(wx) }}</span>
+            </div>
+          </div>
+          <p v-else>No Weather Data</p>
         </div>
       </div>
       <div class="flex flex-col gap-4 text-xs font-syne-mono">
@@ -164,7 +191,53 @@ const cloudLayers = computed(() => {
         />
       </div>
     </div>
-    <div class="py-8 pl-8 flex-1 border-l-border border-l">side</div>
+    <div class="py-8 pl-8 flex-1 border-l-border border-l flex flex-col gap-4">
+      <div class="card flex flex-col gap-4">
+        <h3>TEMP / DEW POINT / SPREAD</h3>
+        <div class="text-xs flex flex-col gap-2">
+          <div v-if="data.temp" class="side-detail-container">
+            <span>Temperature</span>
+            <span class="data">{{ Math.round(data.temp) }}°C</span>
+          </div>
+          <hr />
+          <div v-if="data.dewp" class="side-detail-container">
+            <span>Dew Point</span>
+            <span class="data">{{ Math.round(data.dewp) }}°C</span>
+          </div>
+          <hr />
+          <div v-if="spread != null" class="side-detail-container">
+            <span>Spread</span>
+            <span class="font-bold font-syne-mono" :class="fogRisk.color">
+              {{ spread }}°C - {{ fogRisk.risk }} fog risk
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="card flex flex-col gap-4">
+        <h3>STATION INFO</h3>
+        <div class="text-xs flex flex-col gap-2">
+          <div class="side-detail-container">
+            <span>ICAO</span>
+            <span class="data">{{ data.icaoId }}</span>
+          </div>
+          <hr />
+          <div class="side-detail-container">
+            <span>Elevation</span>
+            <span class="data">{{ data.elev }}</span>
+          </div>
+          <hr />
+          <div class="side-detail-container">
+            <span>Coordinates</span>
+            <span class="data">{{ coordinatesToHuman(data.lat, data.lon) }}</span>
+          </div>
+          <hr />
+          <div class="side-detail-container">
+            <span>Type</span>
+            <span class="data">{{ data.metarType }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -177,6 +250,14 @@ const cloudLayers = computed(() => {
     'wind wind'
     'temp qnh'
     'vis wx';
+}
+
+.side-detail-container {
+  @apply flex justify-between items-center;
+
+  span.data {
+    @apply font-bold text-text font-syne-mono;
+  }
 }
 
 .cloud-layer {

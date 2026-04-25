@@ -76,6 +76,10 @@ body {
   @apply border rounded-full px-3.5 py-1.5 text-xs font-semibold font-syne-mono;
 }
 
+@utility weather-tag {
+  @apply border rounded-full px-3.5 py-1.5 text-xs font-semibold font-syne-mono bg-surface-tertiary;
+}
+
 @utility card {
   @apply bg-surface-secondary rounded-lg shadow-lg p-4 border-border border text-text-muted flex flex-col gap-2;
 
