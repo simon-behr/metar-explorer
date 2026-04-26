@@ -63,7 +63,7 @@ const layerName = computed(() => {
   @apply flex h-1.5 rounded-full overflow-hidden flex-1;
 
   .cloud {
-    @apply bg-surface-tertiary rounded-full;
+    @apply bg-clouds rounded-full;
   }
 }
 </style>

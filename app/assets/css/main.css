@@ -18,7 +18,9 @@
   --color-background: #0d1117;
   --color-surface-secondary: #161b22;
   --color-surface-tertiary: #21262d;
+  --color-clouds: #8796ae;
   --color-border: rgba(255, 255, 255, 0.08);
+  --color-shimmer: rgba(88, 166, 255, 0.08);
 
   --spacing-header: 60px;
   --spacing-side: 22px;
@@ -37,6 +39,7 @@
     --color-background: #f6f8fa;
     --color-surface-secondary: #ffffff;
     --color-surface-tertiary: #f0f2f4;
+    --color-clouds: #7394ba;
     --color-border: rgba(0, 0, 0, 0.08);
   }
 

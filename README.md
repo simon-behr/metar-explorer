@@ -1,75 +1,102 @@
-# Nuxt Minimal Starter
+# METAR Explorer
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Real-time aviation weather decoded — built with Nuxt 4, Vue 3 and TypeScript.
 
-## Setup
+Live at [metar.simonbehr.dev](https://metar.simonbehr.dev)
 
-Make sure to install dependencies:
+---
+
+## What it does
+
+Search any ICAO airport code and get the current METAR decoded into human-readable weather data. Raw
+METAR strings are parsed and visualized — no aviation background required to understand what's going
+on.
+
+**Features**
+
+- Live METAR data from the [Aviation Weather Center API](https://aviationweather.gov/api)
+- Wind direction visualized on an interactive compass rose
+- Flight category badge — VFR / MVFR / IFR
+- Raw METAR string
+- Cloud layers with base altitudes
+- QNH in hPa and inHg
+- Temp / dew point spread with fog risk indicator
+- Nearby stations sorted by distance
+- Dark / Light mode
+- Fully responsive
+
+---
+
+## Stack
+
+- **Framework** — Nuxt 4 / Vue 3 with Composition API
+- **Language** — TypeScript
+- **Styling** — Tailwind CSS v4
+- **Data** — Aviation Weather Center REST API (no API key required)
+- **Quality** — Oxlint & Oxfmt
+
+---
+
+## Running locally
 
 ```bash
-# npm
+# Install dependencies
 npm install
 
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
+# Start dev server
 npm run dev
 
-# pnpm
-pnpm dev
+# Type check
+npm run typecheck
 
-# yarn
-yarn dev
-
-# bun
-bun run dev
+# Lint & Format
+npm run lint:check
 ```
 
-## Production
+---
 
-Build the application for production:
+## How it works
 
-```bash
-# npm
-npm run build
+The AWC API returns raw METAR data as JSON. We use the structured data to drive the UI components like the compass rose or cloud layers.
 
-# pnpm
-pnpm build
+CORS is handled via a Nuxt server route that proxies requests to the AWC API server-side.
 
-# yarn
-yarn build
-
-# bun
-bun run build
+```
+Browser → Nuxt Server Route → AWC API
 ```
 
-Locally preview production build:
+Nearby stations are fetched via a bounding box calculated from the searched station's coordinates.
 
-```bash
-# npm
-npm run preview
+---
 
-# pnpm
-pnpm preview
+## Project structure
 
-# yarn
-yarn preview
-
-# bun
-bun run preview
+```
+app/
+├── components/
+│   ├── CompassRose.vue
+│   ├── CloudLayer.vue
+│   ├── TheHeader.vue
+│   └── ...
+├── layouts/
+│   └── default.vue
+├── pages/
+│   ├── index.vue
+│   └── detail.vue
+├── server/
+│   └── api/
+│       └── metar.get.ts
+├── types/
+│   └── MetarProperties.ts
+└── utils/
+    ├── formatWind.ts
+    ├── formatWxString.ts
+    └── ...
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+---
+
+## About
+
+Built by [Simon Behr](https://simonbehr.dev) — frontend developer and student pilot. The combination
+made this project a natural fit: I know what the data means and why it matters.

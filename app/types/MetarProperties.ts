@@ -1,6 +1,6 @@
-export type MetarType = 'METAR' | 'SPECI' | 'SYNOP' | 'BUOY' | 'CMAN'
+type MetarType = 'METAR' | 'SPECI' | 'SYNOP' | 'BUOY' | 'CMAN'
 
-export type CloudCover = 'CLR' | 'CAVOK' | 'FEW' | 'SCT' | 'BKN' | 'OVC' | 'OVX'
+type CloudCover = 'CLR' | 'CAVOK' | 'FEW' | 'SCT' | 'BKN' | 'OVC' | 'OVX'
 
 export interface CloudLayer {
   cover: CloudCover
