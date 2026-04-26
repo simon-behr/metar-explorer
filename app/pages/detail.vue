@@ -64,7 +64,7 @@ const detailedName = computed(() => {
 
 const formattedTime = computed(() => {
   if (!metar.value) return ''
-  const date = new Date(metar.value.reportTime)
+  const date = new Date(metar.value.receiptTime)
   return date.toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'short',
@@ -115,7 +115,7 @@ const cloudLayers = computed(() => {
 </script>
 
 <template>
-  <p v-if="pending" class="m-auto">Loading...</p>
+  <TheLoader v-if="pending" />
   <div v-else-if="metar" class="flex px-side">
     <div class="py-8 pr-8 flex-3 flex flex-col gap-5">
       <div class="flex flex-col gap-1">
@@ -140,17 +140,27 @@ const cloudLayers = computed(() => {
             {{ metar.rawOb }}
           </p>
         </div>
+        <div class="flex flex-col my-4 gap-4 text-xs font-syne-mono" style="grid-area: clouds">
+          <h3>CLOUD LAYERS</h3>
+          <p v-if="!cloudLayers.length">No Clouds</p>
+          <CloudLayer
+            v-else
+            v-for="(cloudLayer, index) in cloudLayers"
+            :cloud-layer="cloudLayer"
+            :key="index"
+          />
+        </div>
         <div style="grid-area: wind" class="card flex items-center flex-row gap-12 p-8">
-          <template v-if="metar.wdir">
+          <template v-if="metar.wdir != null">
             <CompassRose :direction="metar.wdir" />
             <div class="flex flex-col gap-2 max-w-64">
               <p class="text-text text-2xl font-syne font-bold">
-                {{ metar.wdir }}° · {{ metar.wspd }} kt
+                {{ metar.wdir === 'VRB' ? metar.wdir : `${metar.wdir}°` }} · {{ metar.wspd }} kt
               </p>
               <p v-if="metar?.wdir != null && metar?.wspd != null">
                 {{ formatWindToText(metar.wspd, metar.wdir, metar.wgst) }}
               </p>
-              <div v-if="metar.wspd" class="flex gap-4">
+              <div v-if="metar.wspd != null" class="flex gap-4">
                 <div class="sub-card">
                   <span class="value">{{ metar.wspd }}</span>
                   <span class="unit">kt</span>
@@ -172,9 +182,9 @@ const cloudLayers = computed(() => {
         </div>
         <div style="grid-area: temp" class="card">
           <h3>TEMPERATURE</h3>
-          <template v-if="metar.temp">
+          <template v-if="metar.temp != null">
             <p class="text-text text-2xl font-syne font-bold">{{ Math.round(metar.temp) }}°C</p>
-            <p v-if="metar.dewp">
+            <p v-if="metar.dewp != null">
               Dew point {{ Math.round(metar.dewp) }}°C · spread {{ spread }}°C
             </p>
           </template>
@@ -182,7 +192,7 @@ const cloudLayers = computed(() => {
         </div>
         <div style="grid-area: qnh" class="card">
           <h3>QNH</h3>
-          <template v-if="metar.altim">
+          <template v-if="metar.altim != null">
             <p class="text-text text-2xl font-syne font-bold">{{ Math.round(metar.altim) }} hPa</p>
             <p>{{ hpaToInHg(metar.altim) }} inHg</p>
           </template>
@@ -207,31 +217,25 @@ const cloudLayers = computed(() => {
           <p v-else>No significant Weather</p>
         </div>
       </div>
-      <div class="flex flex-col gap-4 text-xs font-syne-mono">
-        <h3>CLOUD LAYERS</h3>
-        <p v-if="!cloudLayers.length">No Clouds</p>
-        <CloudLayer
-          v-else
-          v-for="(cloudLayer, index) in cloudLayers"
-          :cloud-layer="cloudLayer"
-          :key="index"
-        />
-      </div>
     </div>
     <div class="py-8 pl-8 flex-1 border-l-border border-l flex flex-col gap-4">
       <div class="card flex flex-col gap-4">
         <h3>TEMP / DEW POINT / SPREAD</h3>
-        <div class="text-xs flex flex-col gap-2">
-          <div v-if="metar.temp" class="side-detail-container">
-            <span>Temperature</span>
-            <span class="data">{{ Math.round(metar.temp) }}°C</span>
-          </div>
-          <hr />
-          <div v-if="metar.dewp" class="side-detail-container">
-            <span>Dew Point</span>
-            <span class="data">{{ Math.round(metar.dewp) }}°C</span>
-          </div>
-          <hr />
+        <div v-if="metar.temp != null || metar.dewp != null" class="text-xs flex flex-col gap-2">
+          <template v-if="metar.temp != null">
+            <div class="side-detail-container">
+              <span>Temperature</span>
+              <span class="data">{{ Math.round(metar.temp) }}°C</span>
+            </div>
+            <hr />
+          </template>
+          <template v-if="metar.dewp != null">
+            <div class="side-detail-container">
+              <span>Dew Point</span>
+              <span class="data">{{ Math.round(metar.dewp) }}°C</span>
+            </div>
+            <hr />
+          </template>
           <div v-if="spread != null" class="side-detail-container">
             <span>Spread</span>
             <span class="font-bold font-syne-mono" :class="fogRisk.color">
@@ -239,6 +243,7 @@ const cloudLayers = computed(() => {
             </span>
           </div>
         </div>
+        <p v-else>No Temperature Data</p>
       </div>
       <div class="card flex flex-col gap-4">
         <h3>STATION INFO</h3>
@@ -287,7 +292,7 @@ const cloudLayers = computed(() => {
       </div>
     </div>
   </div>
-  <p class="m-auto" v-else>
+  <p class="m-auto pt-header" v-else>
     No METAR data found for this ICAO code. <br />
     Try something like: EDDM, LOWW, EDDF
   </p>
@@ -299,6 +304,7 @@ const cloudLayers = computed(() => {
   @apply grid gap-4;
   grid-template-areas:
     'raw raw'
+    'clouds clouds'
     'wind wind'
     'temp qnh'
     'vis wx';

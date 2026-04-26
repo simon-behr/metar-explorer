@@ -6,6 +6,7 @@ defineProps<{ fltCat?: string; small?: boolean }>()
   <div v-if="fltCat === 'VFR'" class="tag text-green-500" :class="{ small }">VFR</div>
   <div v-else-if="fltCat === 'IFR'" class="tag text-red-500" :class="{ small }">IFR</div>
   <div v-else-if="fltCat === 'MVFR'" class="tag text-blue-500" :class="{ small }">MVFR</div>
+  <div v-else class="tag" :class="{ small }">???</div>
 </template>
 
 <style scoped></style>

@@ -4,7 +4,7 @@ const navigateToDetailPage = (icaoId: string) => {
 }
 </script>
 <template>
-  <div class="flex items-center justify-center px-side">
+  <div class="flex pt-header items-center justify-center px-side">
     <div class="flex flex-col items-center gap-4 max-w-xl">
       <CompassRose />
       <h2 class="text-xl">Enter an ICAO code to get started</h2>

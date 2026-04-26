@@ -95,7 +95,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <canvas ref="canvas" width="120" height="120" class="compass-rose" />
+  <canvas ref="canvas" width="120" height="120" />
 </template>
 
 <style scoped></style>
