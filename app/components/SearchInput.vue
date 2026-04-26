@@ -16,7 +16,7 @@ const handleSearch = () => {
     <input
       type="text"
       v-model="value"
-      class="bg-surface-secondary px-3 w-24 md:w-64"
+      class="bg-surface-secondary px-3"
       :class="{ uppercase: value }"
       maxlength="4"
       minlength="4"

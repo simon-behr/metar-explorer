@@ -116,8 +116,8 @@ const cloudLayers = computed(() => {
 
 <template>
   <TheLoader v-if="pending" />
-  <div v-else-if="metar" class="flex px-side">
-    <div class="py-8 pr-8 flex-3 flex flex-col gap-5">
+  <div v-else-if="metar" class="flex px-side lg:flex-row flex-col">
+    <div class="lg:pb-8 pt-8 lg:pr-8 flex-3 flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <div class="flex justify-between items-center">
           <h2 class="font-bold text-3xl">{{ detailedName.name }}</h2>
@@ -218,7 +218,7 @@ const cloudLayers = computed(() => {
         </div>
       </div>
     </div>
-    <div class="py-8 pl-8 flex-1 border-l-border border-l flex flex-col gap-4">
+    <div class="py-8 lg:pl-8 flex-1 border-l-border lg:border-l flex flex-col gap-4">
       <div class="card flex flex-col gap-4">
         <h3>TEMP / DEW POINT / SPREAD</h3>
         <div v-if="metar.temp != null || metar.dewp != null" class="text-xs flex flex-col gap-2">

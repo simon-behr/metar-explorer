@@ -20,7 +20,7 @@
   --color-surface-tertiary: #21262d;
   --color-border: rgba(255, 255, 255, 0.08);
 
-  --spacing-header: 75px;
+  --spacing-header: 60px;
   --spacing-side: 22px;
 
   --font-syne: 'Syne', sans-serif;
@@ -42,6 +42,7 @@
 
   @media (min-width: 768px) {
     --spacing-side: 44px;
+    --spacing-header: 75px;
   }
 }
 
@@ -61,10 +62,14 @@ body {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  padding: 8px 18px;
+  padding: 6px 8px;
   border-radius: 99px;
   cursor: pointer;
   transition: background 0.2s;
+
+  @media (min-width: 768px) {
+    padding: 8px 18px;
+  }
 
   &.filled {
     background: var(--color-primary);
